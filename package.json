@@ -1,0 +1,28 @@
+{
+  "name": "imagefunctions",
+  "version": "1.0.0",
+  "description": "Helper functions for image manupulations",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": "index.js",
+  "pkg": {
+    "assets": [
+      "node_modules/**/*",
+      "FileIO.js",
+      "setting.json"
+    ],
+    "targets": [
+      "node16-win-x64"
+    ]
+  },
+  "author": "Gaurav Gupta (Raisehand CEO)",
+  "license": "ISC",
+  "dependencies": {
+    "@randy.tarampi/lwip": "^3.0.17",
+    "lodash": "^4.17.21",
+    "yargs": "^16.2.0",
+    "mkdirp": "^1.0.4"
+  }
+}
