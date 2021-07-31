@@ -10,8 +10,9 @@
   "pkg": {
     "assets": [
       "node_modules/**/*",
-      "FileIO.js",
-      "setting.json"
+      "FileRemover.js",
+      "setting.json",
+      "FileIO.js"
     ],
     "targets": [
       "node16-win-x64"
@@ -22,7 +23,9 @@
   "dependencies": {
     "@randy.tarampi/lwip": "^3.0.17",
     "lodash": "^4.17.21",
-    "yargs": "^16.2.0",
-    "mkdirp": "^1.0.4"
+    "luxon": "^2.0.1",
+    "mkdirp": "^1.0.4",
+    "recursive-readdir": "^2.2.2",
+    "yargs": "^16.2.0"
   }
 }

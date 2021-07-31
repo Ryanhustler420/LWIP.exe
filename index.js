@@ -6,6 +6,7 @@ const FILEio = require('./FileIO');
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs');
+require('./FileRemover')();
 
 // Multiple command for this file to run
 // node index.js please run pad --url "E:\TourPictures\20180527_124950.jpg" --urls "E:\TourPictures\20180527_124950.jpg" "E:\_RaisehandMain\Products\APPS\More Files\Images\desi.png" --dump "./temp" --output_name "same" --args 50 50 50 50 "white"
