@@ -6,7 +6,7 @@ const luxon = require('luxon');
 const recursive = require("recursive-readdir");
 
 module.exports = async function () {
-    checkAndPerformCleanup();
+    await checkAndPerformCleanup();
 }
 
 async function checkAndPerformCleanup() {

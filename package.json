@@ -22,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "@randy.tarampi/lwip": "^3.0.17",
+    "jimp": "^0.16.1",
     "lodash": "^4.17.21",
     "luxon": "^2.0.1",
     "mkdirp": "^1.0.4",

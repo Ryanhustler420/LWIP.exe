@@ -1,11 +1,13 @@
-const FWIP = require('@randy.tarampi/lwip');
-const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
-// const settings = require('./setting.json');
-const FILEio = require('./FileIO');
+const LWIP = require('@randy.tarampi/lwip');
+const yargs = require('yargs/yargs');
+const Jimp = require("jimp");
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs');
+
+// const settings = require('./setting.json');
+const FILEio = require('./FileIO');
 require('./FileRemover')();
 
 // Multiple command for this file to run
@@ -15,6 +17,10 @@ require('./FileRemover')();
 // https://stackoverflow.com/questions/41199981/run-python-script-in-electron-app [Take an idea from this answer]
 // what would happen if we build elctron application, this node will no longer work, lets check
 // console.log(process.versions.modules);
+
+// Make executable file
+// pkg --output build/imageFunction .
+// pkg --output imageFunction .
 
 const avaliableColor = [
     "black",   // {r: 0, g: 0, b: 0, a: 100}
@@ -40,7 +46,7 @@ const availableFunctions = [{
     }
 }];
 
-const output = yargs(hideBin(process.argv))
+const input = yargs(hideBin(process.argv))
     .group(['clean', 'please'], 'Core Functions').wrap(null)
     .command('clean', 'clean the workspace before progressing further operation', function (yargs) {
         return yargs
@@ -72,7 +78,7 @@ const output = yargs(hideBin(process.argv))
             })
             .option('dump', {
                 describe: 'please provide arguments for given function name',
-                default: 'build/js/pickup',
+                default: 'output',
             })
             .option('args', {
                 describe: 'please provide arguments for given function name',
@@ -93,7 +99,7 @@ const output = yargs(hideBin(process.argv))
             .option('resultFile', {
                 describe: 'please provide a file name to which the console dump will be place',
                 type: 'string',
-                default: 'carry.json'
+                default: 'operation.json'
             })
             .group(_.map(availableFunctions, e => e.name), 'args')
             .describe(availableFunctions[0].name, availableFunctions[0].args_example)
@@ -120,68 +126,70 @@ const output = yargs(hideBin(process.argv))
         console.log(argv.type);
     })
     .epilogue('This script is build by Gaurav Gupta for public to use, you can follow him on github https://github.com/Ryanhustler420.')
-    .epilog(`
-        ******************************************************************************
-        NOTE: Please only provide .JPG type image, it only support .JPG file as of now
-        ******************************************************************************
-    `)
     .wrap(130)
     .help()
     .argv
 
-const selectedFunctionPos = _.indexOf(_.map(availableFunctions, e => e.name), output.function);
+const selectedFunctionPos = _.indexOf(_.map(availableFunctions, e => e.name), input.function);
 if (selectedFunctionPos == -1) { console.log({}); return; }
 
 const selectedFunction = availableFunctions[selectedFunctionPos];
-const isValidArgs = selectedFunction.validateArgs(output.args);
+const isValidArgs = selectedFunction.validateArgs(input.args);
 if (!isValidArgs) { console.log({}); return; }
 
-FILEio.createPath(output.dump).then(async () => {
+FILEio.createPath(input.dump).then(async () => {
 
     // handle error, or wrong args
     // https://github.com/randytarampi/lwip [Documentation]
-    const folder = `${output.dump}`
+    const folder = `${input.dump}`
 
-    if (output.url) { // single url present
+    if (input.url) { // single url present
 
         const urlResult = {};
-        const fileName = `${path.parse(output.url).base}`;
-        const fileExtention = `${fileName.split('.').pop()}`; // .png causing error
-        urlResult['fname_we'] = `${Date.now()}.jpg`; // `${Date.now()}.${fileExtention}` causing [Error: Invalid PNG buffer]
+        const fileName = `${path.parse(input.url).base}`;
+        const fileExtention = `${fileName.split('.').pop()}`;
+        urlResult['fname_we'] = `${Date.now()}.${fileExtention}`;
         urlResult['imageDump'] = `${folder}/${urlResult['fname_we']}`;
-        output.urlResult = urlResult;
+        input.urlResult = urlResult;
 
-        await copyFileToLocal(output.url, urlResult.imageDump);
-        const response = await openImageWithFWIP(urlResult.imageDump);
-        if (response) await padImage(response, output.args[0], output.args[1], output.args[2], output.args[3], output.args[4], urlResult.imageDump);
-
-        await FILEio.writeJSON(folder, output.resultFile, output);
-
-        console.log(output);
-
-    } else if (output.urls.length > 0) { // multiple urls present
-
-        const urlsResult = { names: [], imageDumps: [] }; // will be removed from receiver, dont know why we need this blank element, but without this it will not work;
-        output.urlsResult = urlsResult;
-
-        for (let urlPos = 0; urlPos < output.urls.length; urlPos++) {
-
-            const fileName = `${path.parse(output.urls[urlPos]).base}`;
-            const fileExtention = `${fileName.split('.').pop()}` // .png causing error
-            const fwe = `${Date.now()}.jpg`; // `${Date.now()}.${fileExtention}` causing [Error: Invalid PNG buffer]
-            const fullPath = `${folder}/${fwe}`;
-
-            await copyFileToLocal(output.urls[urlPos], fullPath);
-            const response = await openImageWithFWIP(fullPath);
-            if (response) await padImage(response, output.args[0], output.args[1], output.args[2], output.args[3], output.args[4], fullPath);
-
-            output.urlsResult.names.push(fwe);
-            output.urlsResult.imageDumps.push(fullPath);
-
-            await FILEio.writeJSON(folder, output.resultFile, output); // this line should be at the last because we are changing the object structure
+        await copyFileToLocal(input.url, urlResult.imageDump);
+        if (fileExtention == 'png') {
+            urlResult['imageDump'] = await convertPngToJpg(urlResult.imageDump, `${folder}/${Date.now()}`);
         }
 
-        console.log(output);
+        const response = await openImageWithLWIP(urlResult.imageDump);
+        if (response) await padImage(response, input.args[0], input.args[1], input.args[2], input.args[3], input.args[4], urlResult.imageDump);
+
+        await FILEio.writeJSON(folder, input.resultFile, input);
+        console.log(input);
+
+    } else if (input.urls.length > 0) { // multiple urls present
+
+        const urlsResult = { names: [], imageDumps: [] }; // will be removed from receiver, dont know why we need this blank element, but without this it will not work;
+        input.urlsResult = urlsResult;
+
+        for (let urlPos = 0; urlPos < input.urls.length; urlPos++) {
+
+            const fileName = `${path.parse(input.urls[urlPos]).base}`;
+            const fileExtention = `${fileName.split('.').pop()}`
+            let fname_we = `${Date.now()}.${fileExtention}`;
+            let fullPath = `${folder}/${fname_we}`;
+
+            await copyFileToLocal(input.urls[urlPos], fullPath);
+            if (fileExtention == 'png') {
+                fullPath = await convertPngToJpg(fullPath, `${folder}/${Date.now()}`);
+            }
+
+            const response = await openImageWithLWIP(fullPath);
+            if (response) await padImage(response, input.args[0], input.args[1], input.args[2], input.args[3], input.args[4], fullPath);
+
+            input.urlsResult.names.push(fname_we);
+            input.urlsResult.imageDumps.push(fullPath);
+
+            await FILEio.writeJSON(folder, input.resultFile, input); // this line should be at the last because we are changing the object structure
+        }
+
+        console.log(input);
 
     } else console.log({}); // not url/urls present so just abort the operation
 
@@ -191,21 +199,34 @@ async function copyFileToLocal(filePath, dumpAt /* full path with file name and 
     return new Promise((resolve, _) => fs.copyFile(filePath, dumpAt, () => resolve(dumpAt)));
 }
 
-async function openImageWithFWIP(imagePath) {
+async function openImageWithLWIP(imagePath) {
     return new Promise((resolve, _) => {
-        FWIP.open(imagePath, async (err, image) => {
+        LWIP.open(imagePath, async (err, image) => {
             if (err) resolve(null);
             resolve(image);
         });
     });
 }
 
-async function padImage(FWIPImageFile, left, top, right, bottom, bgColor, imagePath) {
+async function padImage(LWIPImageFile, left, top, right, bottom, bgColor, imagePath) {
     return new Promise((resolve, _) => {
-        FWIPImageFile.batch().pad(left, top, right, bottom, bgColor)
+        LWIPImageFile.batch().pad(left, top, right, bottom, bgColor)
             .writeFile(imagePath, async err => {
                 if (err) { resolve(null); }
                 resolve(true);
             });
+    });
+}
+
+async function convertPngToJpg(fileWithExtention, dumpAtWithoutExtention) {
+    return new Promise((resolve, reject) => {
+        Jimp.read(fileWithExtention, function (err, image) {
+            if (err) return reject(err.message);
+            image.background(0xFFFFFFFF, (err, val) => {
+                if (err) return reject(err.message);
+                val.write(`${dumpAtWithoutExtention}.jpg`);
+                resolve(`${dumpAtWithoutExtention}.jpg`);
+            });
+        });
     });
 }
