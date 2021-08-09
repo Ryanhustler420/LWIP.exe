@@ -12,7 +12,9 @@ require('./FileRemover')();
 
 // Multiple command for this file to run
 // node index.js please run pad --url "E:\TourPictures\20180527_124950.jpg" --urls "E:\TourPictures\20180527_124950.jpg" "E:\_RaisehandMain\Products\APPS\More Files\Images\desi.png" --dump "./temp" --output_name "same" --args 50 50 50 50 "white"
+// node index.js please run pad --url "E:\TourPictures\20180527_124950.jpg" --urls "E:\TourPictures\20180527_124950.jpg" "E:\_RaisehandMain\Products\APPS\More Files\Images\desi.png" --dump "./temp" --output_name "same" --args 50 50 50 50 "white" --quality 50
 // node index.js please run pad --url "E:\TourPictures\20180527_124950.jpg" --args 50 50 50 50 "white"
+// node index.js please run pad --url "E:\TourPictures\20180527_124950.jpg" --args 50 50 50 50 "white" --quality 50
 
 // https://stackoverflow.com/questions/41199981/run-python-script-in-electron-app [Take an idea from this answer]
 // what would happen if we build elctron application, this node will no longer work, lets check
@@ -67,7 +69,7 @@ const input = yargs(hideBin(process.argv))
     .command('please', 'help you to call various function after you write please keyword', function (yargs) {
         return yargs
             // .config({ extends: './setting.json', logLevel: 'Verbose' })
-            .usage('./$0 please <function> [url] [args...] [urls...] [output_name] [dump] [resultFile] - hit return key to execute further')
+            .usage('./$0 please <function> [url] [args...] [urls...] [quality] [output_name] [dump] [resultFile] - hit return key to execute further')
             .option('url', {
                 describe: 'please provide local image file path which you want to manupulate',
                 type: 'string',
@@ -75,6 +77,10 @@ const input = yargs(hideBin(process.argv))
             .option('urls', {
                 describe: 'please provide local images urls path which you want to manupulate',
                 type: 'array',
+            })
+            .option('quality', {
+                describe: 'please provide a numaric value, the lesser will reduce the quality of the image',
+                type: 'number',
             })
             .option('dump', {
                 describe: 'please provide arguments for given function name',
@@ -105,8 +111,10 @@ const input = yargs(hideBin(process.argv))
             .describe(availableFunctions[0].name, availableFunctions[0].args_example)
 
             .example('please run pad --url "C:/users/cat/smile_one.png" 25 25 35 36 "white"')
+            .example('please run pad --url "C:/users/cat/smile_one.png" 25 25 35 36 "white" --quality 30')
             .example('please run pad --urls "C:/users/cat/smile_one.png" "D:/pictures/pussy.jpg" "D:/pictures/furniture.jpg" "D:/pictures/gun.jpg" "D:/pictures/bj.jpg" 100 150 150 70 "blue"')
-            .command('run <function> [url] [args] [urls] [output_name] [dump] [resultFile]', '- runs a function by given name and arguments', (yargs) => {
+            .example('please run pad --urls "C:/users/cat/smile_one.png" "D:/pictures/pussy.jpg" "D:/pictures/furniture.jpg" "D:/pictures/gun.jpg" "D:/pictures/bj.jpg" 100 150 150 70 "blue" --quality 30')
+            .command('run <function> [url] [urls] [args] [quality] [output_name] [dump] [resultFile]', '- runs a function by given name and arguments', (yargs) => {
                 yargs
                     .positional('function', {})
                     .positional('url', {})
@@ -160,6 +168,8 @@ FILEio.createPath(input.dump).then(async () => {
         const response = await openImageWithLWIP(urlResult.imageDump);
         if (response) await padImage(response, input.args[0], input.args[1], input.args[2], input.args[3], input.args[4], urlResult.imageDump);
 
+        if (input.quality) { await changeQualityOfImage(input.quality, urlResult.imageDump); }
+
         await FILEio.writeJSON(folder, input.resultFile, input);
         console.log(input);
 
@@ -182,6 +192,8 @@ FILEio.createPath(input.dump).then(async () => {
 
             const response = await openImageWithLWIP(fullPath);
             if (response) await padImage(response, input.args[0], input.args[1], input.args[2], input.args[3], input.args[4], fullPath);
+
+            if (input.quality) { await changeQualityOfImage(input.quality, fullPath); }
 
             input.urlsResult.names.push(fname_we);
             input.urlsResult.imageDumps.push(fullPath);
@@ -228,5 +240,17 @@ async function convertPngToJpg(fileWithExtention, dumpAtWithoutExtention) {
                 resolve(`${dumpAtWithoutExtention}.jpg`);
             });
         });
+    });
+}
+
+async function changeQualityOfImage(quality = 50, imagePath) {
+    return await new Promise((resolve, reject) => {
+        try {
+            Jimp.read(imagePath, (err, val) => {
+                if (err) resolve(false)
+                val.quality(quality).write(imagePath);
+                resolve(true);
+            });
+        } catch (e) { console.log('-->', e.message); }
     });
 }
