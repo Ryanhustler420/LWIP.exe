@@ -1,0 +1,10 @@
+System Req.
+- OS Windows 8.1 or higher
+- Winrar (File Extractor) / ISO (File Extractor)
+
+Screen Resolution (Optional)
+- 4k (for better features)
+
+How to setup
+- Extrat the IDK_Bundle.rar file
+- Place the extracted files in a seperate and isolated place (both files should be at the same location)
